@@ -1,3 +1,4 @@
+import json
 import boto3
 from boto3.dynamodb.conditions import Attr
 
@@ -5,10 +6,6 @@ dynamodb_resource = boto3.resource("dynamodb")
 
 pessoa_table = dynamodb_resource.Table("pessoa")
 
-# Consulta com filtros
-query_result = pessoa_table.scan(
-    TableName="pessoa", FilterExpression=Attr("status_registro").eq(0)
-)
 
 def mostrar_resultado(result):
     for item in result["Items"]:
@@ -33,6 +30,16 @@ def atualizar_status(item):
     print(response)
 
 
-if query_result["ResponseMetadata"]["HTTPStatusCode"] == 200:
-    item = primeiro_item(query_result)
-    atualizar_status(item)
+def lambda_handler(event, context):
+    # Consulta com filtros
+    query_result = pessoa_table.scan(
+        TableName="pessoa", FilterExpression=Attr("status_registro").eq(0)
+    )
+
+    if query_result["ResponseMetadata"]["HTTPStatusCode"] == 200:
+        return {
+            "statusCode": 200,
+            "body": json.dumps(query_result["Items"], default=str),
+        }
+
+    return {"statusCode": 500, "body": "Erro"}
